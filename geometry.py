@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from enum import Enum, unique
 from typing import Tuple, List, Optional
+from math import inf
 
 Point = Tuple[float, float]
 
@@ -18,34 +19,54 @@ class Rectangle:
         self.max_x: float = max_x
         self.min_y: float = min_y
         self.max_y: float = max_y
+        if min_x >= max_x or min_y >= max_y:
+            raise ValueError(
+                'incorrect parameters for rectangle construction: {}, {}, {}, {}'.format(min_x, max_x, min_y, max_y)
+            )
+
+    def __and__(self, other: Rectangle):
+        min_x = max(self.min_x, other.min_x)
+        max_x = min(self.max_x, other.max_x)
+        min_y = max(self.min_y, other.min_y)
+        max_y = min(self.max_y, other.max_y)
+        if min_x < max_x and min_y < max_y:
+            return Rectangle(min_x, max_x, min_y, max_y)
+        else:
+            return None
+
+    def __eq__(self, other: Rectangle):
+        return self.min_x == other.min_x and self.max_x == other.max_x and self.min_y == other.min_y and self.max_y == other.max_y
+
+    def __ne__(self, other: Rectangle):
+        return not self == other
+
+    def __le__(self, other: Rectangle):
+        return self == self & other
+
+    def __lt__(self, other: Rectangle):
+        return self <= other and self != other
+
+    def __ge__(self, other: Rectangle):
+        return other == self & other
+
+    def __gt__(self, other: Rectangle):
+        return self >= other and self != other
 
     def less_than(self, line: float, axis: AxisType) -> Optional[Rectangle]:
         if axis is AxisType.X:
-            if self.max_x < line:
-                return self
-            if self.min_x > line:
-                return None
-            return Rectangle(self.min_x, line, self.min_y, self.max_y)
+            return self & Rectangle(-inf, line, -inf, inf)
         else:
-            if self.max_y < line:
-                return self
-            if self.min_y > line:
-                return None
-            return Rectangle(self.min_x, self.max_x, self.min_y, line)
+            return self & Rectangle(-inf, inf, -inf, line)
 
-    def greater_than(self, line: float, axis: AxisType):
+    def greater_than(self, line: float, axis: AxisType) -> Optional[Rectangle]:
         if axis is AxisType.X:
-            if self.min_x > line:
-                return self
-            if self.max_x < line:
-                return None
-            return Rectangle(line, self.max_x, self.min_y, self.max_y)
+            return self & Rectangle(line, inf, -inf, inf)
         else:
-            if self.min_y > line:
-                return self
-            if self.max_y < line:
-                return None
-            return Rectangle(self.min_x, self.max_x, line, self.max_y)
+            return self & Rectangle(-inf, inf, line, inf)
+
+    def point_inside(self, point: Point) -> bool:
+        x, y = point
+        return self.min_x < x <= self.max_x and self.min_y < y <= self.max_y
 
 
 def rectangle_from_points(points: List[Point]) -> Optional[Rectangle]:
