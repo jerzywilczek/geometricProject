@@ -1,7 +1,6 @@
 from enum import Enum, unique
-from typing import Tuple, List, Callable
-
-Point = Tuple[float, float]
+from typing import List, Callable
+from geometry import Point
 
 
 @unique
