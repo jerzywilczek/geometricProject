@@ -1,6 +1,13 @@
+from enum import Enum, unique
 from typing import Tuple, List, Optional
 
 Point = Tuple[float, float]
+
+
+@unique
+class AxisType(Enum):
+    X = 0
+    Y = 1
 
 
 class Rectangle:
