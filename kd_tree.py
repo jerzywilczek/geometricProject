@@ -1,6 +1,7 @@
 
-from typing import List, Callable, Optional
+from typing import List, Callable, Optional, Tuple
 from geometry import Point, Rectangle, rectangle_from_points, AxisType
+from draw_tool import Scene, PointsCollection, LinesCollection, Plot
 
 
 class _Node:
@@ -39,24 +40,23 @@ class _Node:
             return (temp[len(temp) // 2] + temp[(len(temp) - 1) // 2]) / 2
 
 
+def _kd_search(node: _Node, rectangle: Rectangle) -> List[Point]:
+    def search_child(child: _Node) -> List[Point]:
+        if child.region <= rectangle:
+            return child.points
+        elif child.region & rectangle is not None:
+            return _kd_search(child, rectangle)
+        else:
+            return []
 
-    def kd_search(self, rectangle: Rectangle) -> List[Point]:
-        def search_child(child: _Node) -> List[Point]:
-            if child.region <= rectangle:
-                return child.points
-            elif child.region & rectangle is not None:
-                return child.kd_search(rectangle)
-            else:
-                return []
-
-        if self.is_leaf:
-            return self.points if self.region <= rectangle else []
-        result = []
-        if self.right is not None:
-            result.extend(search_child(self.left))
-        if self.left is not None:
-            result.extend(search_child(self.right))
-        return result
+    if node.is_leaf:
+        return node.points if node.region <= rectangle else []
+    result = []
+    if node.right is not None:
+        result.extend(search_child(node.left))
+    if node.left is not None:
+        result.extend(search_child(node.right))
+    return result
 
 
 class KDTree:
@@ -65,7 +65,7 @@ class KDTree:
 
     def search(self, x_min: float, x_max: float, y_min: float, y_max: float) -> List[Point]:
         rectangle = Rectangle(x_min, x_max, y_min, y_max) & self.__root.region
-        return self.__root.kd_search(rectangle)
+        return _kd_search(self.__root, rectangle)
 
 
 if __name__ == "__main__":
