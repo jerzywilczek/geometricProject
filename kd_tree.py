@@ -1,15 +1,15 @@
-from typing import List, Callable
+from typing import List, Callable, Optional
 from geometry import Point, Rectangle, rectangle_from_points, AxisType
 
 
 class _Node:
-    def __init__(self, points: List[Point], area: Rectangle = None, depth: int = 0):
+    def __init__(self, points: List[Point], region: Optional[Rectangle] = None, depth: int = 0):
         self.points: List[Point] = points
         self.is_leaf: bool = len(points) == 1
 
-        self.area = area if area is not None else rectangle_from_points(points)
+        self.region: Rectangle = region if region is not None else rectangle_from_points(points)
 
-        self.division_axis_type: AxisType = AxisType[depth % 2]
+        self.division_axis_type: AxisType = AxisType(depth % 2)
         self.__point_comparing_key: Callable[[Point], float] = \
             (lambda p: p[0]) if self.division_axis_type is AxisType.Y else (lambda p: p[1])
 
@@ -17,12 +17,12 @@ class _Node:
         self.dividing_line: float = median if not self.is_leaf else None
         self.left = _Node(
             list(filter(lambda p: self.__point_comparing_key(p) <= median, points)),
-            area=area.less_than(median, self.division_axis_type),
+            region=self.region.less_than(median, self.division_axis_type),
             depth=depth + 1
         ) if not self.is_leaf else None
         self.right = _Node(
             list(filter(lambda p: self.__point_comparing_key(p) > median, points)),
-            area=area.greater_than(median, self.division_axis_type),
+            region=self.region.greater_than(median, self.division_axis_type),
             depth=depth + 1
         ) if not self.is_leaf else None
 
@@ -32,3 +32,42 @@ class _Node:
             return temp[len(temp) // 2]
         else:
             return (temp[len(temp) // 2] + temp[(len(temp) - 1) // 2]) / 2
+
+    def kd_search(self, rectangle: Rectangle) -> List[Point]:
+        def search_child(child: _Node) -> List[Point]:
+            if child.region <= rectangle:
+                return child.points
+            elif child.region & rectangle is not None:
+                return child.kd_search(rectangle)
+            else:
+                return []
+
+        if self.is_leaf:
+            return self.points if self.region <= rectangle else []
+        result = []
+        result.extend(search_child(self.left))
+        result.extend(search_child(self.right))
+        return result
+
+
+class KDTree:
+    def __init__(self, points: List[Point]):
+        self.__root: _Node = _Node(points)
+
+    def search(self, x_min: float, x_max: float, y_min: float, y_max: float) -> List[Point]:
+        rectangle = Rectangle(x_min, x_max, y_min, y_max) & self.__root.region
+        return self.__root.kd_search(rectangle)
+
+
+if __name__ == "__main__":
+    Points: List[Point] = [
+        (1, 2),
+        (1, 3),
+        (2, 1),
+        (3, 2)
+    ]
+
+    Tree = KDTree(Points)
+    print(Points)
+    print(Tree.search(2, 3, 2, 3))
+
