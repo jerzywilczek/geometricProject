@@ -25,6 +25,8 @@ class Rectangle:
             )
 
     def __and__(self, other: Rectangle):
+        if not isinstance(other, Rectangle):
+            return None
         min_x = max(self.min_x, other.min_x)
         max_x = min(self.max_x, other.max_x)
         min_y = max(self.min_y, other.min_y)
@@ -35,21 +37,38 @@ class Rectangle:
             return None
 
     def __eq__(self, other: Rectangle):
-        return self.min_x == other.min_x and self.max_x == other.max_x and self.min_y == other.min_y and self.max_y == other.max_y
+        if not isinstance(other, Rectangle):
+            return False
+        return (
+                self.min_x == other.min_x and
+                self.max_x == other.max_x and
+                self.min_y == other.min_y and
+                self.max_y == other.max_y
+        )
 
     def __ne__(self, other: Rectangle):
+        if not isinstance(other, Rectangle):
+            return False
         return not self == other
 
     def __le__(self, other: Rectangle):
+        if not isinstance(other, Rectangle):
+            return False
         return self == self & other
 
     def __lt__(self, other: Rectangle):
+        if not isinstance(other, Rectangle):
+            return False
         return self <= other and self != other
 
     def __ge__(self, other: Rectangle):
+        if not isinstance(other, Rectangle):
+            return False
         return other == self & other
 
     def __gt__(self, other: Rectangle):
+        if not isinstance(other, Rectangle):
+            return False
         return self >= other and self != other
 
     def less_than(self, line: float, axis: AxisType) -> Optional[Rectangle]:
@@ -60,9 +79,9 @@ class Rectangle:
 
     def greater_than(self, line: float, axis: AxisType) -> Optional[Rectangle]:
         if axis is AxisType.X:
-            return self & Rectangle(line, inf, -inf, inf)
+            return self & Rectangle(line + 10**-10, inf, -inf, inf)
         else:
-            return self & Rectangle(-inf, inf, line, inf)
+            return self & Rectangle(-inf, inf, line + 10**-10, inf)
 
     def point_inside(self, point: Point) -> bool:
         x, y = point
