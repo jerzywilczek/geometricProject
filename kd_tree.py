@@ -49,6 +49,14 @@ class _Node:
         else:
             return (self.dividing_line, self.region.min_y), (self.dividing_line, self.region.max_y)
 
+    def get_lines_from_node(self) -> Tuple[List[Line], List[Line]]:
+        if self is None:
+            return [], []
+        rectangle: List[Line] = self.region.get_lines() if self.region is not None else []
+        if self.is_leaf:
+            return rectangle, []
+        return rectangle, [self.get_divider_line()]
+
 
 def _kd_search(node: _Node, rectangle: Rectangle) -> List[Point]:
     def search_child(child: _Node) -> List[Point]:
@@ -70,12 +78,7 @@ def _kd_search(node: _Node, rectangle: Rectangle) -> List[Point]:
 
 
 def _get_lines_from_subtree(node: _Node) -> Tuple[List[Line], List[Line]]:
-    if node is None:
-        return [], []
-    rectangles: List[Line] = node.region.get_lines() if node.region is not None else []
-    if node.is_leaf:
-        return rectangles, []
-    dividers: List[Line] = [node.get_divider_line()]
+    rectangles, dividers = node.get_lines_from_node()
 
     def get_from_child(child: _Node):
         if child is not None:
@@ -83,8 +86,9 @@ def _get_lines_from_subtree(node: _Node) -> Tuple[List[Line], List[Line]]:
             rectangles.extend(child_rects)
             dividers.extend(child_divs)
 
-    get_from_child(node.left)
-    get_from_child(node.right)
+    if node is not None:
+        get_from_child(node.left)
+        get_from_child(node.right)
     return rectangles, dividers
 
 
