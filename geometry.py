@@ -25,6 +25,8 @@ class Rectangle:
             )
 
     def __and__(self, other: Rectangle):
+        if not isinstance(other, Rectangle):
+            return None
         min_x = max(self.min_x, other.min_x)
         max_x = min(self.max_x, other.max_x)
         min_y = max(self.min_y, other.min_y)
@@ -35,6 +37,8 @@ class Rectangle:
             return None
 
     def __eq__(self, other: Rectangle):
+        if not isinstance(other, Rectangle):
+            return False
         return (
                 self.min_x == other.min_x and
                 self.max_x == other.max_x and
@@ -43,18 +47,28 @@ class Rectangle:
         )
 
     def __ne__(self, other: Rectangle):
+        if not isinstance(other, Rectangle):
+            return False
         return not self == other
 
     def __le__(self, other: Rectangle):
+        if not isinstance(other, Rectangle):
+            return False
         return self == self & other
 
     def __lt__(self, other: Rectangle):
+        if not isinstance(other, Rectangle):
+            return False
         return self <= other and self != other
 
     def __ge__(self, other: Rectangle):
+        if not isinstance(other, Rectangle):
+            return False
         return other == self & other
 
     def __gt__(self, other: Rectangle):
+        if not isinstance(other, Rectangle):
+            return False
         return self >= other and self != other
 
     def less_than(self, line: float, axis: AxisType) -> Optional[Rectangle]:
