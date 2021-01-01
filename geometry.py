@@ -88,6 +88,14 @@ class Rectangle:
         x, y = point
         return self.min_x < x <= self.max_x and self.min_y < y <= self.max_y
 
+    def get_lines(self) -> List[Line]:
+        return [
+            ((self.min_x, self.min_y), (self.max_x, self.min_y)),
+            ((self.max_x, self.min_y), (self.max_x, self.max_y)),
+            ((self.max_x, self.max_y), (self.min_x, self.max_y)),
+            ((self.min_x, self.max_y), (self.min_x, self.min_y))
+        ]
+
 
 def rectangle_from_points(points: List[Point]) -> Optional[Rectangle]:
     x_coords = list(map(lambda p: p[0], points))
