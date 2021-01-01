@@ -1,7 +1,7 @@
 
 from typing import List, Callable, Optional, Tuple
 from geometry import Point, Line, Rectangle, rectangle_from_points, AxisType
-from draw_tool import Scene, PointsCollection, LinesCollection, Plot
+from draw_tool import Scene, PointsCollection, LinesCollection
 
 
 class _Node:
@@ -11,7 +11,11 @@ class _Node:
 
         self.region: Rectangle = region if region is not None else rectangle_from_points(points)
 
-        self.division_axis_type: AxisType = AxisType(depth % 2)
+        x_coords = list(map(lambda p: p[0], points))
+        x_diff = max(x_coords) - min(x_coords)
+        y_coords = list(map(lambda p: p[1], points))
+        y_diff = max(y_coords) - min(y_coords)
+        self.division_axis_type: AxisType = AxisType.Y if x_diff >= y_diff else AxisType.X
         self.__point_comparing_key: Callable[[Point], float] = \
             (lambda p: p[0]) if self.division_axis_type is AxisType.Y else (lambda p: p[1])
 
@@ -56,7 +60,7 @@ def _kd_search(node: _Node, rectangle: Rectangle) -> List[Point]:
             return []
 
     if node.is_leaf:
-        return node.points if node.region <= rectangle else []
+        return node.points if rectangle.point_inside(node.points[0]) else []
     result = []
     if node.right is not None:
         result.extend(search_child(node.left))
@@ -66,7 +70,9 @@ def _kd_search(node: _Node, rectangle: Rectangle) -> List[Point]:
 
 
 def _get_lines_from_subtree(node: _Node) -> Tuple[List[Line], List[Line]]:
-    rectangles: List[Line] = node.region.get_lines()
+    if node is None:
+        return [], []
+    rectangles: List[Line] = node.region.get_lines() if node.region is not None else []
     if node.is_leaf:
         return rectangles, []
     dividers: List[Line] = [node.get_divider_line()]
@@ -85,10 +91,22 @@ def _get_lines_from_subtree(node: _Node) -> Tuple[List[Line], List[Line]]:
 class KDTree:
     def __init__(self, points: List[Point]):
         self.__root: _Node = _Node(points)
+        self.__rectangles, self.__dividers = _get_lines_from_subtree(self.__root)
 
     def search(self, x_min: float, x_max: float, y_min: float, y_max: float) -> List[Point]:
         rectangle = Rectangle(x_min, x_max, y_min, y_max) & self.__root.region
         return _kd_search(self.__root, rectangle)
+
+    def get_visualized(self) -> Scene:
+        return Scene(
+            points=[
+              PointsCollection(self.__root.points)
+            ],
+            lines=[
+                LinesCollection(self.__rectangles),
+                LinesCollection(self.__dividers, color="yellow"),
+            ]
+        )
 
 
 if __name__ == "__main__":
@@ -106,4 +124,4 @@ if __name__ == "__main__":
 
     Tree = KDTree(Points)
     print(Points)
-    print(Tree.search(0, 1, 0, 1))
+    print(Tree.search(2, 4, 2, 4))
