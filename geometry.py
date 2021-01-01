@@ -79,9 +79,9 @@ class Rectangle:
 
     def greater_than(self, line: float, axis: AxisType) -> Optional[Rectangle]:
         if axis is AxisType.X:
-            return self & Rectangle(line, inf, -inf, inf)
+            return self & Rectangle(line + 10**-10, inf, -inf, inf)
         else:
-            return self & Rectangle(-inf, inf, line, inf)
+            return self & Rectangle(-inf, inf, line + 10**-10, inf)
 
     def point_inside(self, point: Point) -> bool:
         x, y = point

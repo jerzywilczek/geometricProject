@@ -15,16 +15,20 @@ class _Node:
 
         median = self.__median()
         self.dividing_line: float = median if not self.is_leaf else None
+
+        left_points = list(filter(lambda p: self.__point_comparing_key(p) <= median, points))
         self.left = _Node(
-            list(filter(lambda p: self.__point_comparing_key(p) <= median, points)),
+            left_points,
             region=self.region.less_than(median, self.division_axis_type),
             depth=depth + 1
-        ) if not self.is_leaf else None
+        ) if (not self.is_leaf) and len(left_points) > 0 else None
+
+        right_points = list(filter(lambda p: self.__point_comparing_key(p) > median, points))
         self.right = _Node(
-            list(filter(lambda p: self.__point_comparing_key(p) > median, points)),
+            right_points,
             region=self.region.greater_than(median, self.division_axis_type),
             depth=depth + 1
-        ) if not self.is_leaf else None
+        ) if (not self.is_leaf) and len(right_points) > 0 else None
 
     def __median(self) -> float:
         temp = sorted(list(map(self.__point_comparing_key, self.points)))
@@ -45,8 +49,10 @@ class _Node:
         if self.is_leaf:
             return self.points if self.region <= rectangle else []
         result = []
-        result.extend(search_child(self.left))
-        result.extend(search_child(self.right))
+        if self.right is not None:
+            result.extend(search_child(self.left))
+        if self.left is not None:
+            result.extend(search_child(self.right))
         return result
 
 
@@ -61,13 +67,18 @@ class KDTree:
 
 if __name__ == "__main__":
     Points: List[Point] = [
+        (1, 1),
         (1, 2),
         (1, 3),
         (2, 1),
-        (3, 2)
+        (2, 2),
+        (2, 3),
+        (3, 1),
+        (3, 2),
+        (3, 3)
     ]
 
     Tree = KDTree(Points)
     print(Points)
-    print(Tree.search(2, 3, 2, 3))
+    print(Tree.search(0, 1, 0, 1))
 
