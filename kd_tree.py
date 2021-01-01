@@ -1,7 +1,10 @@
 
-from typing import List, Callable, Optional, Tuple
+from typing import List, Callable, Optional, Tuple, Union
 from geometry import Point, Line, Rectangle, rectangle_from_points, AxisType
 from draw_tool import Scene, PointsCollection, LinesCollection
+
+
+VisualizingFrame = Tuple[List[Point], List[Line]]
 
 
 class _Node:
@@ -58,22 +61,31 @@ class _Node:
         return rectangle, [self.get_divider_line()]
 
 
-def _kd_search(node: _Node, rectangle: Rectangle) -> List[Point]:
+def _kd_search(node: _Node, rectangle: Rectangle, frames: Optional[List[VisualizingFrame]] = None) -> List[Point]:
+    def add_frame(framed_node: _Node):
+        if frames is not None:
+            frames.append((framed_node.points, framed_node.get_lines_from_node()[0]))
+
+    if node.is_leaf:
+        add_frame(node)
+        return node.points if rectangle.point_inside(node.points[0]) else []
+    result = []
+
     def search_child(child: _Node) -> List[Point]:
         if child.region <= rectangle:
+            add_frame(child)
             return child.points
         elif child.region & rectangle is not None:
             return _kd_search(child, rectangle)
         else:
             return []
 
-    if node.is_leaf:
-        return node.points if rectangle.point_inside(node.points[0]) else []
-    result = []
     if node.right is not None:
         result.extend(search_child(node.left))
     if node.left is not None:
         result.extend(search_child(node.right))
+    if frames is not None:
+        frames.append((result, node.get_lines_from_node()[0]))
     return result
 
 
@@ -97,9 +109,30 @@ class KDTree:
         self.__root: _Node = _Node(points)
         self.__rectangles, self.__dividers = _get_lines_from_subtree(self.__root)
 
-    def search(self, x_min: float, x_max: float, y_min: float, y_max: float) -> List[Point]:
+    def search(self, x_min: float, x_max: float, y_min: float, y_max: float, visualize: bool = False) \
+            -> Union[List[Point], Tuple[List[Point], List[Scene]]]:
         rectangle = Rectangle(x_min, x_max, y_min, y_max) & self.__root.region
-        return _kd_search(self.__root, rectangle)
+        if not visualize:
+            return _kd_search(self.__root, rectangle)
+        frames: List[VisualizingFrame] = []
+        points = _kd_search(self.__root, rectangle, frames=frames)
+
+        def scene_from_frame(frame: VisualizingFrame) -> Scene:
+            vis_points, vis_lines = frame
+            return Scene(
+                points=[
+                    PointsCollection(self.__root.points),
+                    PointsCollection(vis_points, color="red")
+                ],
+                lines=[
+                    LinesCollection(self.__rectangles),
+                    LinesCollection(self.__dividers, color="yellow"),
+                    LinesCollection(vis_lines, color="red")
+                ]
+            )
+
+        scenes = list(map(scene_from_frame, frames))
+        return points, scenes
 
     def get_visualized(self) -> Scene:
         return Scene(
@@ -128,4 +161,4 @@ if __name__ == "__main__":
 
     Tree = KDTree(Points)
     print(Points)
-    print(Tree.search(2, 4, 2, 4))
+    print(Tree.search(1, 4, 1, 4))
