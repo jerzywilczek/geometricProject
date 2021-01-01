@@ -74,15 +74,15 @@ class Rectangle:
 
     def less_than(self, line: float, axis: AxisType) -> Optional[Rectangle]:
         if axis is AxisType.X:
-            return self & Rectangle(-inf, line, -inf, inf)
-        else:
             return self & Rectangle(-inf, inf, -inf, line)
+        else:
+            return self & Rectangle(-inf, line, -inf, inf)
 
     def greater_than(self, line: float, axis: AxisType) -> Optional[Rectangle]:
         if axis is AxisType.X:
-            return self & Rectangle(line + 10**-10, inf, -inf, inf)
+            return self & Rectangle(-inf, inf, line + 10 ** -10, inf)
         else:
-            return self & Rectangle(-inf, inf, line + 10**-10, inf)
+            return self & Rectangle(line + 10 ** -10, inf, -inf, inf)
 
     def point_inside(self, point: Point) -> bool:
         x, y = point
