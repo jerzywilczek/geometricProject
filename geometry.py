@@ -5,6 +5,7 @@ from typing import Tuple, List, Optional
 from math import inf
 
 Point = Tuple[float, float]
+Line = Tuple[Point, Point]
 
 
 @unique
