@@ -1,3 +1,4 @@
+
 from typing import List, Callable, Optional
 from geometry import Point, Rectangle, rectangle_from_points, AxisType
 
@@ -36,6 +37,8 @@ class _Node:
             return temp[len(temp) // 2]
         else:
             return (temp[len(temp) // 2] + temp[(len(temp) - 1) // 2]) / 2
+
+
 
     def kd_search(self, rectangle: Rectangle) -> List[Point]:
         def search_child(child: _Node) -> List[Point]:
@@ -81,4 +84,3 @@ if __name__ == "__main__":
     Tree = KDTree(Points)
     print(Points)
     print(Tree.search(0, 1, 0, 1))
-
