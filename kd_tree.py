@@ -1,6 +1,6 @@
 
 from typing import List, Callable, Optional, Tuple
-from geometry import Point, Rectangle, rectangle_from_points, AxisType
+from geometry import Point, Line, Rectangle, rectangle_from_points, AxisType
 from draw_tool import Scene, PointsCollection, LinesCollection, Plot
 
 
@@ -39,6 +39,12 @@ class _Node:
         else:
             return (temp[len(temp) // 2] + temp[(len(temp) - 1) // 2]) / 2
 
+    def get_divider_line(self) -> Line:
+        if self.division_axis_type is AxisType.X:
+            return (self.region.min_x, self.dividing_line), (self.region.max_x, self.dividing_line)
+        else:
+            return (self.dividing_line, self.region.min_y), (self.dividing_line, self.region.max_y)
+
 
 def _kd_search(node: _Node, rectangle: Rectangle) -> List[Point]:
     def search_child(child: _Node) -> List[Point]:
@@ -57,6 +63,23 @@ def _kd_search(node: _Node, rectangle: Rectangle) -> List[Point]:
     if node.left is not None:
         result.extend(search_child(node.right))
     return result
+
+
+def _get_lines_from_subtree(node: _Node) -> Tuple[List[Line], List[Line]]:
+    rectangles: List[Line] = node.region.get_lines()
+    if node.is_leaf:
+        return rectangles, []
+    dividers: List[Line] = [node.get_divider_line()]
+
+    def get_from_child(child: _Node):
+        if child is not None:
+            child_rects, child_divs = _get_lines_from_subtree(child)
+            rectangles.extend(child_rects)
+            dividers.extend(child_divs)
+
+    get_from_child(node.left)
+    get_from_child(node.right)
+    return rectangles, dividers
 
 
 class KDTree:
