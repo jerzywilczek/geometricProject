@@ -1,6 +1,7 @@
 from typing import List, Callable, Optional, Tuple, Union
 from geometry import Point, Line, Rectangle, rectangle_from_points, AxisType
 from draw_tool import Scene, PointsCollection, LinesCollection
+from random import sample
 
 VisualizingFrame = Tuple[List[Point], List[Line]]
 _COLOR_SEARCHED_RECT = "black"
@@ -40,7 +41,12 @@ class _Node:
         ) if (not self.is_leaf) and len(right_points) > 0 else None
 
     def __median(self) -> float:
-        temp = sorted(list(map(self.__point_comparing_key, self.points)))
+        chosen: List[Point]
+        if len(self.points) > 1000:
+            chosen = sample(self.points, 1000)
+        else:
+            chosen = self.points
+        temp = sorted(list(map(self.__point_comparing_key, chosen)))
         if len(temp) % 2 == 1:
             return temp[len(temp) // 2]
         else:
