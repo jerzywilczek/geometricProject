@@ -1,0 +1,3 @@
+[submodule "geometricProjectDocumentation"]
+	path = geometricProjectDocumentation
+	url = https://github.com/jerzywilczek/geometricProjectDocumentation.git
