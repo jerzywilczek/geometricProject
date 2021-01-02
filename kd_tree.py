@@ -10,7 +10,7 @@ _COLOR_DIVIDER = "yellow"
 
 
 class _Node:
-    def __init__(self, points: List[Point], region: Optional[Rectangle] = None, depth: int = 0):
+    def __init__(self, points: List[Point], region: Optional[Rectangle] = None):
         self.points: List[Point] = points
         self.is_leaf: bool = len(points) == 1
 
@@ -31,14 +31,12 @@ class _Node:
         self.left = _Node(
             left_points,
             region=self.region.less_than(median, self.division_axis_type),
-            depth=depth + 1
         ) if (not self.is_leaf) and len(left_points) > 0 else None
 
         right_points = list(filter(lambda p: self.__point_comparing_key(p) > median, points))
         self.right = _Node(
             right_points,
             region=self.region.greater_than(median, self.division_axis_type),
-            depth=depth + 1
         ) if (not self.is_leaf) and len(right_points) > 0 else None
 
     def __median(self) -> float:
