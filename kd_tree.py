@@ -1,8 +1,6 @@
-
 from typing import List, Callable, Optional, Tuple, Union
 from geometry import Point, Line, Rectangle, rectangle_from_points, AxisType
 from draw_tool import Scene, PointsCollection, LinesCollection
-
 
 VisualizingFrame = Tuple[List[Point], List[Line]]
 
@@ -62,21 +60,27 @@ class _Node:
 
 
 def _kd_search(node: _Node, rectangle: Rectangle, frames: Optional[List[VisualizingFrame]] = None) -> List[Point]:
-    def add_frame(framed_node: _Node):
-        if frames is not None:
-            frames.append((framed_node.points, framed_node.get_lines_from_node()[0]))
-
     if node.is_leaf:
-        add_frame(node)
-        return node.points if rectangle.point_inside(node.points[0]) else []
+        if rectangle.point_inside(node.points[0]):
+            if frames is not None:
+                frames.append((node.points, node.get_lines_from_node()[0]))
+            return node.points
+        else:
+            if frames is not None:
+                frames.append(([], node.get_lines_from_node()[0]))
+            return []
     result = []
+
+    if frames is not None:
+        frames.append(([], node.get_lines_from_node()[0]))
 
     def search_child(child: _Node) -> List[Point]:
         if child.region <= rectangle:
-            add_frame(child)
+            if frames is not None:
+                frames.append((child.points, child.get_lines_from_node()[0]))
             return child.points
         elif child.region & rectangle is not None:
-            return _kd_search(child, rectangle)
+            return _kd_search(child, rectangle, frames=frames)
         else:
             return []
 
@@ -114,8 +118,10 @@ class KDTree:
         rectangle = Rectangle(x_min, x_max, y_min, y_max) & self.__root.region
         if not visualize:
             return _kd_search(self.__root, rectangle)
+
         frames: List[VisualizingFrame] = []
         points = _kd_search(self.__root, rectangle, frames=frames)
+        scenes: List[Scene] = [self.get_visualized()]
 
         def scene_from_frame(frame: VisualizingFrame) -> Scene:
             vis_points, vis_lines = frame
@@ -127,17 +133,18 @@ class KDTree:
                 lines=[
                     LinesCollection(self.__rectangles),
                     LinesCollection(self.__dividers, color="yellow"),
+                    LinesCollection(rectangle.get_lines(), color="brown"),
                     LinesCollection(vis_lines, color="red")
                 ]
             )
 
-        scenes = list(map(scene_from_frame, frames))
+        scenes.extend(map(scene_from_frame, frames))
         return points, scenes
 
     def get_visualized(self) -> Scene:
         return Scene(
             points=[
-              PointsCollection(self.__root.points)
+                PointsCollection(self.__root.points)
             ],
             lines=[
                 LinesCollection(self.__rectangles),
