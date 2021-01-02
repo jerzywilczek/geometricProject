@@ -1,8 +1,7 @@
 from enum import IntEnum
 from typing import List
-import random
-import copy
 from draw_tool import *
+import copy
 
 from geometry import Point, Rectangle
 
@@ -16,7 +15,8 @@ class Quadrant(IntEnum):
 
 class _Node:
 
-    def __init__(self, n, s, w, e, quadrant, parent):
+    def __init__(self, n, s, w, e, quadrant):
+        self.boundary = Rectangle(w, e, s, n)
         self.pos = None
         self.max_y = n
         self.min_y = s
@@ -25,11 +25,7 @@ class _Node:
         self.mid_y = (self.min_y + self.max_y) / 2
         self.mid_x = (self.min_x + self.max_x) / 2
         self.quadrant = quadrant
-        self.parent = parent
         self.children = None
-
-    def in_boundary(self, point: Point) -> bool:  # todo zmienić słabe nierówności + nie jest używane
-        return self.min_y <= point[1] <= self.max_y and self.min_x <= point[0] <= self.max_x
 
     def add_child(self, node):
         if self.children is None:
@@ -44,9 +40,8 @@ class Quadtree:
         s = min(points, key=lambda p: p[1])[1]
         w = min(points, key=lambda p: p[0])[0]
         e = max(points, key=lambda p: p[0])[0]
-        self.root = _Node(n, s, w, e, None, None)
-        points = copy.deepcopy(points)
-        random.shuffle(points)
+        self.points = points
+        self.root = _Node(n, s, w, e, None)
         self.__create_quadtree(self.root, points)
 
     def __create_quadtree(self, node: _Node, points: List[Point]):
@@ -54,10 +49,10 @@ class Quadtree:
             node.pos = points[0]
         if len(points) <= 1:
             return
-        ne = _Node(node.max_y, node.mid_y, node.mid_x, node.max_x, Quadrant.NE, node)
-        nw = _Node(node.max_y, node.mid_y, node.min_x, node.mid_x, Quadrant.NW, node)
-        sw = _Node(node.mid_y, node.min_y, node.min_x, node.mid_x, Quadrant.SW, node)
-        se = _Node(node.mid_y, node.min_y, node.mid_x, node.max_x, Quadrant.SE, node)
+        ne = _Node(node.max_y, node.mid_y, node.mid_x, node.max_x, Quadrant.NE)
+        nw = _Node(node.max_y, node.mid_y, node.min_x, node.mid_x, Quadrant.NW)
+        sw = _Node(node.mid_y, node.min_y, node.min_x, node.mid_x, Quadrant.SW)
+        se = _Node(node.mid_y, node.min_y, node.mid_x, node.max_x, Quadrant.SE)
 
         points_ne = [p for p in points if p[0] > node.mid_x and p[1] >= node.mid_y]
         points_nw = [p for p in points if p[0] <= node.mid_x and p[1] > node.mid_y]
@@ -73,46 +68,61 @@ class Quadtree:
         node.add_child(se)
         self.__create_quadtree(se, points_se)
 
-    def __find(self, node: _Node, rect: Rectangle, res: List[Point]):
-        if rect.min_x > node.max_x or rect.max_x < node.min_x or rect.min_y > node.max_y or rect.max_y < node.max_y:
+    def __find(self, node: _Node, rect: Rectangle, res: List[Point], view):
+        if rect.min_x > node.max_x or rect.max_x < node.min_x or rect.min_y > node.max_y or rect.max_y < node.min_y:
             return
+        if view is not None:
+            view.visited_quadrants.extend(node.boundary.get_lines())
         if node.children is None:
             if node.pos is not None and rect.point_inside(node.pos):
                 res.append(node.pos)
+                if view is not None:
+                    view.points_inside.append(node.pos)
+                    view.gen_scene()
             return
+        if view is not None:
+            view.gen_scene()
         for ch in node.children:
-            self.__find(ch, rect, res)
+            self.__find(ch, rect, res, view)
 
-    def find(self, rect: Rectangle) -> List[Point]:
+    def find(self, rect: Rectangle, visualize=False):
         res = []
-        self.__find(self.root, rect, res)
-        return res
+        if visualize:
+            view = View(self.points, rect, self.root)
+            self.__find(self.root, rect, res, view)
+            return view.get_plot()
+        else:
+            self.__find(self.root, rect, res, None)
+            return res
 
 
 class View:
 
-    def __init__(self, points: List[Point], rect: Rectangle, quadtree: Quadtree):
+    def __init__(self, points: List[Point], rect: Rectangle, root: _Node):
         self.scenes = []
         self.quadrants = []
+        self.visited_quadrants = []
+        self.points_inside = []
         self.points = PointsCollection(points)
-        self.rect = LinesCollection(
-            [[(rect.min_x, rect.min_y), (rect.max_x, rect.min_y)], [(rect.max_x, rect.min_y), (rect.max_x, rect.max_y)],
-             [(rect.max_x, rect.max_y), (rect.min_x, rect.max_y)]],
-            color='brown')
+        self.rect = LinesCollection(lines=rect.get_lines(), color='black')
+        self.__gen_quadrants(root)
+        self.quadrants = LinesCollection(self.quadrants)
+        self.gen_scene()
 
     def __gen_quadrants(self, node: _Node):
-        self.quadrants.extend(
-            [[(node.min_x, node.min_y), (node.max_x, node.min_y)], [(node.max_x, node.min_y), (node.max_x, node.max_y)],
-             [(node.max_x, node.max_y), (node.min_x, node.max_y)]])
+        self.quadrants.extend(node.boundary.get_lines())
         if node.children is not None:
             for ch in node.children:
                 if ch is not None:
-                    self.__gen_quadrants(node)
+                    self.__gen_quadrants(ch)
 
+    def gen_scene(self):
+        self.scenes.append(Scene(points=[self.points, PointsCollection(copy.deepcopy(self.points_inside), color='red')],
+                                 lines=[self.quadrants, self.rect,
+                                        LinesCollection(self.visited_quadrants[:-4],
+                                                        color='green'),
+                                        LinesCollection(self.visited_quadrants[-4:],
+                                                        color='red')]))
 
-points0 = [tuple([0.0, 1.0]), tuple([5.0, 2.0]), tuple([2.0, 2.0]), tuple([5.0, 3.0]), tuple([0.0, 0.0]),
-           tuple([2.0, 3.0]), tuple([6.0, 2.0]), tuple([3.0, 2.0])]
-Qt = Quadtree(points0)
-rect0 = Rectangle(1, 4, 1, 3)
-
-print(Qt.find(rect0))
+    def get_plot(self) -> Plot:
+        return Plot(scenes=self.scenes)
