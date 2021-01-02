@@ -96,6 +96,9 @@ class Rectangle:
             ((self.min_x, self.max_y), (self.min_x, self.min_y))
         ]
 
+    def to_tuple(self) -> Tuple[float, float, float, float]:
+        return self.min_x, self.max_x, self.min_y, self.max_y
+
 
 def rectangle_from_points(points: List[Point]) -> Optional[Rectangle]:
     x_coords = list(map(lambda p: p[0], points))
