@@ -3,6 +3,10 @@ from geometry import Point, Line, Rectangle, rectangle_from_points, AxisType
 from draw_tool import Scene, PointsCollection, LinesCollection
 
 VisualizingFrame = Tuple[List[Point], List[Line]]
+_COLOR_SEARCHED_RECT = "black"
+_COLOR_CONSIDERED_NOW = "red"
+_COLOR_FOUND_POINT = "red"
+_COLOR_DIVIDER = "yellow"
 
 
 class _Node:
@@ -51,8 +55,6 @@ class _Node:
             return (self.dividing_line, self.region.min_y), (self.dividing_line, self.region.max_y)
 
     def get_lines_from_node(self) -> Tuple[List[Line], List[Line]]:
-        if self is None:
-            return [], []
         rectangle: List[Line] = self.region.get_lines() if self.region is not None else []
         if self.is_leaf:
             return rectangle, []
@@ -128,13 +130,13 @@ class KDTree:
             return Scene(
                 points=[
                     PointsCollection(self.__root.points),
-                    PointsCollection(vis_points, color="red")
+                    PointsCollection(vis_points, color=_COLOR_FOUND_POINT)
                 ],
                 lines=[
                     LinesCollection(self.__rectangles),
-                    LinesCollection(self.__dividers, color="yellow"),
-                    LinesCollection(rectangle.get_lines(), color="brown"),
-                    LinesCollection(vis_lines, color="red")
+                    LinesCollection(self.__dividers, color=_COLOR_DIVIDER),
+                    LinesCollection(rectangle.get_lines(), color=_COLOR_SEARCHED_RECT),
+                    LinesCollection(vis_lines, color=_COLOR_CONSIDERED_NOW)
                 ]
             )
 
@@ -148,7 +150,7 @@ class KDTree:
             ],
             lines=[
                 LinesCollection(self.__rectangles),
-                LinesCollection(self.__dividers, color="yellow"),
+                LinesCollection(self.__dividers, color=_COLOR_DIVIDER),
             ]
         )
 
