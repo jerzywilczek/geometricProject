@@ -76,3 +76,25 @@ class Tester:
     def print_tests_both_trees_csv(self, base_filename: str):
         self.print_tests_csv(test_quadtree_buildup, test_quadtree_search, base_filename + '_quadtree')
         self.print_tests_csv(test_kd_buildup, test_kd_search, base_filename + '_kd_tree')
+
+
+class TesterCluster(Tester):
+    def __init__(self,
+                 n_values: List[int],
+                 rectangle_amount_per_test: int,
+                 scope: Tuple[float, float] = (0, 100),
+                 cluster_amount: int = 5,
+                 cluster_radius: float = 5
+                 ):
+        super().__init__(n_values, rectangle_amount_per_test, scope)
+        self.test_points = list(
+            map(
+                lambda n: gen_point_clusters(
+                    scope=scope,
+                    points_per_cluster=n//cluster_amount,
+                    cluster_amount=cluster_amount,
+                    cluster_radius=cluster_radius
+                ),
+                self.n_values
+            )
+        )
