@@ -56,7 +56,7 @@ class TesterCluster(Tester):
             self, n_values: List[int],
             averaging_iterations: int,
             scope: Tuple[float, float] = (0, 100),
-            cluster_amount:int = 5,
+            cluster_amount: int = 5,
             cluster_radius: float = 5
     ):
         super().__init__(n_values, 0)
