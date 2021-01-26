@@ -1,3 +1,4 @@
+import sys
 import tracemalloc
 from typing import Callable
 from kd_tree import KDTree
@@ -36,10 +37,15 @@ class Tester:
             buildup_tester: Callable[[List[Point]], float],
             filename: str
     ):
-        buildup_results: List[float] = [
-            sum([buildup_tester(points) for points in test_sets])/len(test_sets)
-            for test_sets in self.test_points
-        ]
+        buildup_results: List[float] = []
+        total_amount = len(self.n_values) * len(self.test_points[0])
+        for i in range(len(self.test_points)):
+            result = []
+            for j in range(len(self.test_points[0])):
+                sys.stdout.write("\rTest {}/{}".format(i * len(self.test_points[0]) + j + 1, total_amount))
+                sys.stdout.flush()
+                result.append(buildup_tester(self.test_points[i][j]))
+            buildup_results.append(sum(result)/len(self.test_points[0]))
 
         with open(filename + '_buildup_memtest.csv', 'w') as file:
             file.write('n;memory\n')
@@ -71,3 +77,8 @@ class TesterCluster(Tester):
                 for _ in range(averaging_iterations)],
             self.n_values
         ))
+
+
+if __name__ == "__main__":
+    tester = Tester([10000], 50)
+    tester.print_tests_both_trees_csv("dupa")
